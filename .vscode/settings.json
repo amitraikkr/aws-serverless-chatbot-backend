@@ -1,0 +1,6 @@
+{
+    "python.analysis.extraPaths": [
+        "./lib_layer/python/site-packages",
+        "./lib_layer/python/lib/python3.11/site-packages"
+    ]
+}

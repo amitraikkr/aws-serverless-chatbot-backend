@@ -1,0 +1,56 @@
+# AWS Serverless Application Model (SAM) Template
+# Author: Amit Rai
+# Date: Nov 14, 20223
+# Location: Toronto, Canada
+# Copyright: Amit Rai
+
+AWSTemplateFormatVersion: '2010-09-09'  # Defines the AWS CloudFormation template version being used.
+Transform: AWS::Serverless-2016-10-31  # Specifies the transform directive to process AWS Serverless Application Model resources.
+
+Resources:
+
+  # DynamoDB Table Resource
+  MyDynamoDBTable:
+    Type: AWS::DynamoDB::Table  # Defines a DynamoDB Table resource.
+    Properties:
+      TableName: "myChatBotv2Table"  # Name of the DynamoDB table. Replace with your desired table name.
+      BillingMode: PAY_PER_REQUEST  # Billing mode set to pay per request for flexible cost management.
+      AttributeDefinitions:
+        - AttributeName: "user_id"  # Primary key attribute name.
+          AttributeType: "S"  # Attribute type (S for String).
+      KeySchema:
+        - AttributeName: "user_id"  # Key schema defining the primary key.
+          KeyType: "HASH"  # Key type set as HASH for the primary key.
+
+  # Lambda Layer Resource
+  MyLayer:
+    Type: AWS::Serverless::LayerVersion  # Defines a Lambda Layer resource.
+    Properties:
+      LayerName: my-lib-layer  # Name of the layer.
+      Description: Layer containing libraries  # Description of the layer.
+      ContentUri: lib_layer/  # URI of the layer content.
+      CompatibleRuntimes:
+        - python3.11  # Runtime compatibility of the layer.
+
+  # Lambda Function Resource
+  MyLambdaFunction:
+    Type: AWS::Serverless::Function  # Defines a Lambda Function resource.
+    Properties:
+      Handler: index.lambda_handler  # Lambda function handler location.
+      Runtime: python3.11  # Runtime environment for the Lambda function.
+      CodeUri: lambda_backend/  # URI of the Lambda function code.
+      Timeout: 120  # Maximum time the function is allowed to run.
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref MyDynamoDBTable  # Reference to the DynamoDB table resource.
+          REGION_NAME: !Ref AWS::Region  # Reference to the AWS region.
+      Layers:
+        - !Ref MyLayer  # Reference to the Lambda layer resource.
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MyDynamoDBTable  # Policy for CRUD operations on the specified DynamoDB table.
+        - Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue  # Permission to get secret values from AWS Secrets Manager.
+              Resource: arn:aws:secretsmanager:us-east-2:868658902285:secret:prod/chatbot/secrectname-xPgLfu  # Specify the resource ARN.

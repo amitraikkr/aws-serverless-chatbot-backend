@@ -1,0 +1,48 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Resources:
+  MyDynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: myChatBotv2Table
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+      - AttributeName: user_id
+        AttributeType: S
+      KeySchema:
+      - AttributeName: user_id
+        KeyType: HASH
+  MyLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: my-lib-layer
+      Description: Layer containing libraries
+      ContentUri: ../../lib_layer
+      CompatibleRuntimes:
+      - python3.11
+  MyLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.lambda_handler
+      Runtime: python3.11
+      CodeUri: MyLambdaFunction
+      Timeout: 120
+      Environment:
+        Variables:
+          TABLE_NAME:
+            Ref: MyDynamoDBTable
+          REGION_NAME:
+            Ref: AWS::Region
+      Layers:
+      - Ref: MyLayer
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: MyDynamoDBTable
+      - Statement:
+        - Effect: Allow
+          Action:
+          - secretsmanager:GetSecretValue
+          Resource: arn:aws:secretsmanager:us-east-2:868658902285:secret:prod/chatbot/secrectname-xPgLfu
+    Metadata:
+      SamResourceId: MyLambdaFunction
